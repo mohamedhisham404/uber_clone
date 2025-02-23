@@ -1,4 +1,4 @@
-import { Image, ScrollView, Text, View } from 'react-native'
+import { Alert, Image, ScrollView, Text, View } from 'react-native'
 import { useState } from 'react'
 import { icons, images } from '@/constants';
 import InputField from '@/components/InputField';
@@ -6,9 +6,10 @@ import CustomButton from '@/components/CustomButton';
 import OAuth from '@/components/OAuth';
 import { Link,router } from 'expo-router';
 import { ReactNativeModal } from "react-native-modal";
+import { useSignUp } from '@clerk/clerk-expo';
 
 const sign_up = () => {
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const { isLoaded, signUp, setActive } = useSignUp()
 
   const [form, setForm] = useState({
     name: "",
@@ -21,17 +22,53 @@ const sign_up = () => {
     code: "",
   });
 
-  const onSignUpPress = () => {
-    setVerification({ ...verification, state: "pending" });
-  };
-
-  const onPressVerify = () => {
-    if (verification.code === "12345") {
-      setVerification({ ...verification, state: "success" });
-    } else {
+  const onSignUpPress = async () => {
+    if (!isLoaded) return;
+    try {
+      await signUp.create({
+        emailAddress: form.email,
+        password: form.password,
+      });
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
       setVerification({
         ...verification,
-        error: "Invalid verification code",
+        state: "pending",
+      });
+    } catch (err: any) {
+      console.log(JSON.stringify(err, null, 2));
+      Alert.alert("Error", err.errors[0].longMessage);
+    }
+  };
+
+  const onPressVerify = async () => {
+    if (!isLoaded) return;
+
+    try {
+      const completeSignUp = await signUp.attemptEmailAddressVerification({
+        code: verification.code,
+      });
+
+      if (completeSignUp.status === "complete") {
+        await setActive({ session: completeSignUp.createdSessionId });
+        
+        setVerification({
+          ...verification,
+          state: "success",
+        });
+
+      } else {
+        setVerification({
+          ...verification,
+          error: "Verification failed. Please try again.",
+          state: "failed",
+        });
+      }
+    
+    } catch (err: any) {
+      setVerification({
+        ...verification,
+        error: err.errors[0].longMessage,
+        state: "failed",
       });
     }
   };
@@ -84,22 +121,15 @@ const sign_up = () => {
           <Text className="text-primary-500">Log In</Text>
         </Link>
       </View>
+
       <ReactNativeModal
         isVisible={verification.state === "pending"}
-        // onBackdropPress={() =>
-        //   setVerification({ ...verification, state: "default" })
-        // }
-        onModalHide={() => {
-          if (verification.state === "success") {
-            setShowSuccessModal(true);
-          }
-        }}
       >
         <View className="bg-white px-7 py-9 rounded-2xl min-h-[300px]">
-          <Text className="font-JakartaExtraBold text-2xl mb-2">
+          <Text className="font-JakartaExtraBold text-2xl mb-2 text-center">
             Verification
           </Text>
-          <Text className="font-Jakarta mb-5">
+          <Text className="font-Jakarta mb-5 text-center">
             We've sent a verification code to {form.email}.
           </Text>
           <InputField
@@ -124,7 +154,8 @@ const sign_up = () => {
           />
         </View>
       </ReactNativeModal>
-      <ReactNativeModal isVisible={showSuccessModal}>
+
+      <ReactNativeModal isVisible={verification.state === "success"}>
         <View className="bg-white px-7 py-9 rounded-2xl min-h-[300px]">
           <Image
             source={images.check}
@@ -143,6 +174,7 @@ const sign_up = () => {
           />
         </View>
       </ReactNativeModal>
+
     </View>
   </ScrollView>
   )
