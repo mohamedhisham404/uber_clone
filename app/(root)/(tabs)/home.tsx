@@ -177,10 +177,15 @@ const home = () => {
 
                       <>
                         <Text className="text-xl font-JakartaBold mt-5 mb-3">Your Current Location</Text>
-                        <View className="flex flex-row items-center bg-transparent h-[300px]">
+                        
+
+                        <View className='flex-1 bg-transparent'>
+                        <View className="h-[300px]">
                           <Map/>
                         </View>
+                        </View>
                       </>
+                        <Text className="text-xl font-JakartaBold mt-5 mb-3">Recent Rides</Text>
                     </>
                 )}
             />
