@@ -13,7 +13,7 @@ declare interface Driver {
 declare interface MarkerData {
     latitude: number;
     longitude: number;
-    id: number;
+    id?: number;
     title: string;
     profile_image_url: string;
     car_image_url: string;
@@ -125,11 +125,11 @@ declare interface LocationStore {
 }
 
 declare interface DriverStore {
-    drivers: MarkerData[];
+    drivers?: MarkerData[];
     selectedDriver: number | null;
     setSelectedDriver: (driverId: number) => void;
     setDrivers: (drivers: MarkerData[]) => void;
-    clearSelectedDriver: () => void;
+    clearSelectedDriver?: () => void;
 }
 
 declare interface DriverCardProps {
